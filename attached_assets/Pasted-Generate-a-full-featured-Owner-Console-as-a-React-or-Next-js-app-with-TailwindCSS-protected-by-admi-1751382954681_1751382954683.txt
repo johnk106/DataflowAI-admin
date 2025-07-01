@@ -1,0 +1,19 @@
+Generate a full-featured Owner Console as a React or Next.js app with TailwindCSS, protected by admin authentication. This console lives under /owner and provides global control over every tenant and pipeline. 
+
+Start with a **Global Layout**: implement a collapsible sidebar containing links to Overview, Tenants, Pipelines, Service Configuration, Security & Audit, Billing & Plans, and System Analytics. Add a top bar showing your company logo, owner’s name with avatar, and a Logout button. Ensure responsive design and mobile support.
+
+On the **Overview Dashboard**, display high‑level metrics in cards: Total Tenants, Total Pipelines, Active Pipelines, Failed Runs Today, and Monthly Ingestion Volume. Below, include two charts: a line showing “Pipeline Runs Over Time (last 90 days)” and a bar chart of “New Tenant Sign‑ups by Month.” Add an alerts widget listing any critical system warnings (service downtime, failed jobs).
+
+In **Tenants Management**, present a searchable, paginated table of all customer organizations with columns: Tenant Name, Plan Tier, Signup Date, Status (Active/Suspended), and Actions (View, Suspend, Upgrade Plan, Delete). Clicking View opens a detail panel showing tenant-specific settings, their pipelines, and usage metrics.
+
+In **Pipelines Management**, show a master list of every pipeline across all tenants. Include filters by tenant, status, and owner; columns: Pipeline ID, Name, Tenant, Owner, Last Run Status, Next Scheduled Run, and Actions (Inspect, Re-run, Archive). The Inspect action opens a detailed view with pipeline definition, version history, code preview, and recent run logs.
+
+Under **Service Configuration**, allow you to manage global settings: default LLM model and temperature, function‑call schema uploads, retention policies for raw S3 data, and feature flags (enable streaming, custom connectors). Provide forms and toggle switches for each setting, with inline descriptions and “Save Changes” buttons.
+
+The **Security & Audit** page should include User & Role Management for platform staff: a table of admin users with roles (Owner, Admin, Support), status, and actions (Edit Role, Disable, Remove). Below that, embed an Audit Log viewer: a searchable, filterable table of every platform event (pipeline creation, code generation, tenant suspensions) with Timestamp, Actor, Action, and Details. Support export to CSV.
+
+In **Billing & Plans**, display tenants grouped by subscription tier, with current plan details, next billing date, and cumulative usage charges. Provide a calendar‑style invoice history and a button to generate or download invoices. Include a “Configure Plans” section where you can define new plan tiers (names, limits, pricing).
+
+Finally, in **System Analytics**, present real‑time health metrics for each microservice (Orchestrator, NiFi, Beam, Airflow): CPU, memory, error rates, and request latency as line gauges. Add a service dependency graph showing up/down status. Offer an alert‑configuration panel to set thresholds and notification channels (email, Slack, PagerDuty).
+
+Structure code with strong TypeScript types, React Query (or SWR) for data fetching from a REST API you’ll stub out, and reusable UI components (Card, Table, Modal, Chart). Organize folders under pages/owner and components/owner. Include comments explaining authentication flow, API interaction, and state management.```

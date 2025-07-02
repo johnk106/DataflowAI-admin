@@ -9,6 +9,8 @@ import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Home from "@/pages/home";
 import Profile from "@/pages/profile";
+import Settings from "@/pages/settings";
+import Connections from "@/pages/connections";
 import OwnerConsolePage from "@/pages/owner/OwnerConsolePage";
 
 function Router() {
@@ -36,6 +38,8 @@ function Router() {
         <>
           <Route path="/" component={Home} />
           <Route path="/profile" component={Profile} />
+          <Route path="/settings" component={Settings} />
+          <Route path="/connections" component={Connections} />
           <Route path="/owner/*" component={OwnerConsolePage} />
         </>
       )}

@@ -107,6 +107,10 @@ Changelog:
     resource limits, pricing tiers, and visual plan builder
   - User Profile Management: Full user profile system with personal information editing, 
     security settings, password changes, and activity logging
+  - Data Connections Management: Comprehensive connections page for managing data sources and 
+    destinations with support for databases, cloud storage, APIs, and file systems
+  - Enhanced navigation: Fixed profile/settings links in dropdown menu and added connections 
+    routing to both sidebar and user menu
   - Enhanced navigation and routing for all new pages and features
 - July 02, 2025. Successfully migrated from Replit Agent to Replit environment
   - Created environment variables documentation (env.txt)

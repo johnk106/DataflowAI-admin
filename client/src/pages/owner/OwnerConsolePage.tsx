@@ -10,6 +10,7 @@ import ServiceConfiguration from "@/components/owner/config/ServiceConfiguration
 import SecurityAudit from "@/components/owner/security/SecurityAudit";
 import BillingPlans from "@/components/owner/billing/BillingPlans";
 import SystemAnalytics from "@/components/owner/analytics/SystemAnalytics";
+import Connections from "@/pages/connections";
 
 export default function OwnerConsolePage() {
   const [currentPage, setCurrentPage] = useState("overview");
@@ -47,7 +48,7 @@ export default function OwnerConsolePage() {
   // Handle URL-based navigation
   useEffect(() => {
     const path = location.replace("/owner", "").replace("/", "");
-    if (path && ["overview", "tenants", "pipelines", "configuration", "security", "billing", "analytics"].includes(path)) {
+    if (path && ["overview", "tenants", "pipelines", "connections", "configuration", "security", "billing", "analytics"].includes(path)) {
       setCurrentPage(path);
     } else if (!path) {
       setCurrentPage("overview");
@@ -85,6 +86,8 @@ export default function OwnerConsolePage() {
         return <TenantsManagement />;
       case "pipelines":
         return <PipelinesManagement />;
+      case "connections":
+        return <Connections />;
       case "configuration":
         return <ServiceConfiguration />;
       case "security":

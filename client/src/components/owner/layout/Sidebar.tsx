@@ -12,6 +12,7 @@ const navigation = [
   { id: "overview", name: "Overview", icon: ChartPie },
   { id: "tenants", name: "Tenants", icon: Users },
   { id: "pipelines", name: "Pipelines", icon: Workflow },
+  { id: "connections", name: "Connections", icon: Database },
   { id: "configuration", name: "Service Configuration", icon: Settings },
   { id: "security", name: "Security & Audit", icon: Shield },
   { id: "billing", name: "Billing & Plans", icon: CreditCard },

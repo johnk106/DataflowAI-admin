@@ -10,9 +10,6 @@ import NewPlanPage from "./NewPlanPage";
 export default function BillingPlans() {
   const [showNewPlan, setShowNewPlan] = useState(false);
 
-  if (showNewPlan) {
-    return <NewPlanPage onBack={() => setShowNewPlan(false)} />;
-  }
   const { data: tenants } = useQuery<Tenant[]>({
     queryKey: ["/api/tenants"],
   });
@@ -24,6 +21,10 @@ export default function BillingPlans() {
   const { data: plans } = useQuery<Plan[]>({
     queryKey: ["/api/plans"],
   });
+
+  if (showNewPlan) {
+    return <NewPlanPage onBack={() => setShowNewPlan(false)} />;
+  }
 
   // Calculate metrics
   const monthlyRevenue = invoices

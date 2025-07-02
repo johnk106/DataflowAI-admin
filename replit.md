@@ -96,6 +96,18 @@ This is a full-featured React application built to serve as an Owner Console for
 
 ```
 Changelog:
+- July 02, 2025. Major Feature Enhancement - Comprehensive DataFlow Console
+  - Enhanced Pipelines Management: Added detailed pipeline creation, status tracking, success rates, 
+    scheduling, and comprehensive filtering with visual status indicators
+  - Comprehensive Security & Audit: Multi-tab security overview with health checks, audit logs, 
+    security incidents tracking, and real-time monitoring capabilities
+  - Advanced Tenants Management: Full tenant lifecycle management with contact information, 
+    billing integration, status tracking, and detailed tenant profiles
+  - New Plan Creation System: Complete billing plan designer with features selection, 
+    resource limits, pricing tiers, and visual plan builder
+  - User Profile Management: Full user profile system with personal information editing, 
+    security settings, password changes, and activity logging
+  - Enhanced navigation and routing for all new pages and features
 - July 02, 2025. Successfully migrated from Replit Agent to Replit environment
   - Created environment variables documentation (env.txt)
   - Added local development setup guide (run.md)

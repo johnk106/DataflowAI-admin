@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Home from "@/pages/home";
+import Profile from "@/pages/profile";
 import OwnerConsolePage from "@/pages/owner/OwnerConsolePage";
 
 function Router() {
@@ -34,6 +35,7 @@ function Router() {
       ) : (
         <>
           <Route path="/" component={Home} />
+          <Route path="/profile" component={Profile} />
           <Route path="/owner/*" component={OwnerConsolePage} />
         </>
       )}

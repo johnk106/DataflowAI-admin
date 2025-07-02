@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -6,26 +7,60 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/hooks/useAuth";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { User, Mail, Shield, Calendar, Upload, Save } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Calendar,
+  Shield,
+  Key,
+  Activity,
+  Settings,
+  Save,
+  Edit,
+  Eye,
+  EyeOff,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  Lock
+} from "lucide-react";
 
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Please enter a valid email address"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().optional(),
+  title: z.string().optional(),
+  department: z.string().optional(),
+  bio: z.string().optional(),
+});
+
+const passwordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 type ProfileForm = z.infer<typeof profileSchema>;
+type PasswordForm = z.infer<typeof passwordSchema>;
 
-export default function Profile() {
+function ProfileInformation() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -33,255 +68,504 @@ export default function Profile() {
       firstName: user?.firstName || "",
       lastName: user?.lastName || "",
       email: user?.email || "",
+      phone: user?.phone || "",
+      title: user?.title || "",
+      department: user?.department || "",
+      bio: user?.bio || "",
     },
   });
 
-  const handleSaveProfile = async (data: ProfileForm) => {
-    setIsLoading(true);
-    try {
-      // In a real app, this would update the user profile via API
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been updated successfully.",
-      });
+  const updateProfileMutation = useMutation({
+    mutationFn: (data: ProfileForm) => apiRequest("/api/auth/profile", "PUT", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({ title: "Success", description: "Profile updated successfully" });
       setIsEditing(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive",
-      });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update profile", variant: "destructive" });
     }
-    setIsLoading(false);
+  });
+
+  const handleSaveProfile = (data: ProfileForm) => {
+    updateProfileMutation.mutate(data);
   };
 
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case 'owner':
-        return 'default';
-      case 'admin':
-        return 'secondary';
-      case 'support':
-        return 'outline';
-      default:
-        return 'outline';
-    }
+  const getInitials = (firstName?: string, lastName?: string) => {
+    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-          <p className="text-gray-600 mt-2">Manage your account information and preferences</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Profile Overview */}
-          <Card className="lg:col-span-1">
-            <CardHeader className="text-center">
-              <div className="relative mx-auto w-24 h-24 mb-4">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Profile Information</CardTitle>
+              <CardDescription>Manage your personal information and account details</CardDescription>
+            </div>
+            <Button
+              variant={isEditing ? "outline" : "default"}
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              {isEditing ? "Cancel" : "Edit Profile"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={form.handleSubmit(handleSaveProfile)} className="space-y-6">
+            {/* Profile Picture and Basic Info */}
+            <div className="flex items-start gap-6">
+              <div className="flex flex-col items-center gap-3">
                 <Avatar className="w-24 h-24">
-                  <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.firstName} />
-                  <AvatarFallback className="text-xl">
-                    {user?.firstName?.[0]}{user?.lastName?.[0]}
+                  <AvatarImage src={user?.profileImageUrl || ""} />
+                  <AvatarFallback className="text-lg">
+                    {getInitials(user?.firstName, user?.lastName)}
                   </AvatarFallback>
                 </Avatar>
-                <Button
-                  size="sm"
-                  className="absolute bottom-0 right-0 w-8 h-8 rounded-full p-0"
-                >
-                  <Upload className="w-4 h-4" />
-                </Button>
+                <div className="text-center">
+                  <p className="font-medium">{user?.firstName} {user?.lastName}</p>
+                  <Badge className="mt-1" variant="secondary">
+                    {user?.role}
+                  </Badge>
+                </div>
               </div>
-              <CardTitle>{user?.firstName} {user?.lastName}</CardTitle>
-              <CardDescription className="flex items-center justify-center gap-2">
-                <Mail className="w-4 h-4" />
-                {user?.email}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Role</span>
-                <Badge variant={getRoleBadgeVariant(user?.role || '')} className="capitalize">
-                  <Shield className="w-3 h-3 mr-1" />
-                  {user?.role}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Status</span>
-                <Badge variant={user?.status === 'active' ? 'default' : 'secondary'} className="capitalize">
-                  {user?.status}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Member Since</span>
-                <span className="text-sm flex items-center">
-                  <Calendar className="w-3 h-3 mr-1" />
-                  {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Profile Form */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex-1 grid grid-cols-2 gap-4">
                 <div>
-                  <CardTitle>Profile Information</CardTitle>
-                  <CardDescription>
-                    Update your personal information and contact details
-                  </CardDescription>
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    {...form.register("firstName")}
+                    disabled={!isEditing}
+                    className={!isEditing ? "bg-gray-50" : ""}
+                  />
+                  {form.formState.errors.firstName && (
+                    <p className="text-sm text-red-500 mt-1">{form.formState.errors.firstName.message}</p>
+                  )}
                 </div>
-                {!isEditing && (
-                  <Button onClick={() => setIsEditing(true)}>
-                    <User className="w-4 h-4 mr-2" />
-                    Edit Profile
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={form.handleSubmit(handleSaveProfile)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      {...form.register("firstName")}
-                      disabled={!isEditing}
-                      className={form.formState.errors.firstName ? "border-red-500" : ""}
-                    />
-                    {form.formState.errors.firstName && (
-                      <p className="text-sm text-red-600">
-                        {form.formState.errors.firstName.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      {...form.register("lastName")}
-                      disabled={!isEditing}
-                      className={form.formState.errors.lastName ? "border-red-500" : ""}
-                    />
-                    {form.formState.errors.lastName && (
-                      <p className="text-sm text-red-600">
-                        {form.formState.errors.lastName.message}
-                      </p>
-                    )}
-                  </div>
+                <div>
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    {...form.register("lastName")}
+                    disabled={!isEditing}
+                    className={!isEditing ? "bg-gray-50" : ""}
+                  />
+                  {form.formState.errors.lastName && (
+                    <p className="text-sm text-red-500 mt-1">{form.formState.errors.lastName.message}</p>
+                  )}
                 </div>
-
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="email">Email Address</Label>
                   <Input
                     id="email"
                     type="email"
                     {...form.register("email")}
                     disabled={!isEditing}
-                    className={form.formState.errors.email ? "border-red-500" : ""}
+                    className={!isEditing ? "bg-gray-50" : ""}
                   />
                   {form.formState.errors.email && (
-                    <p className="text-sm text-red-600">
-                      {form.formState.errors.email.message}
-                    </p>
+                    <p className="text-sm text-red-500 mt-1">{form.formState.errors.email.message}</p>
                   )}
                 </div>
+                <div>
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    {...form.register("phone")}
+                    disabled={!isEditing}
+                    className={!isEditing ? "bg-gray-50" : ""}
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="title">Job Title</Label>
+                  <Input
+                    id="title"
+                    {...form.register("title")}
+                    disabled={!isEditing}
+                    className={!isEditing ? "bg-gray-50" : ""}
+                    placeholder="Data Engineer"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="department">Department</Label>
+                  <Input
+                    id="department"
+                    {...form.register("department")}
+                    disabled={!isEditing}
+                    className={!isEditing ? "bg-gray-50" : ""}
+                    placeholder="Engineering"
+                  />
+                </div>
+              </div>
+            </div>
 
-                {isEditing && (
-                  <>
-                    <Separator />
-                    <div className="flex justify-end space-x-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setIsEditing(false);
-                          form.reset();
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={isLoading}>
-                        <Save className="w-4 h-4 mr-2" />
-                        {isLoading ? "Saving..." : "Save Changes"}
-                      </Button>
+            <div>
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea
+                id="bio"
+                {...form.register("bio")}
+                disabled={!isEditing}
+                className={!isEditing ? "bg-gray-50" : ""}
+                placeholder="Tell us about yourself..."
+                rows={3}
+              />
+            </div>
+
+            {isEditing && (
+              <div className="flex justify-end">
+                <Button type="submit" disabled={updateProfileMutation.isPending}>
+                  <Save className="w-4 h-4 mr-2" />
+                  {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            )}
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Account Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Account Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">User ID</Label>
+                <p className="text-sm text-gray-600 font-mono">{user?.id}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Account Status</Label>
+                <Badge className="bg-green-100 text-green-800">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  {user?.status || 'Active'}
+                </Badge>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Member Since</Label>
+                <p className="text-sm text-gray-600">
+                  {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Role</Label>
+                <p className="text-sm text-gray-600 capitalize">{user?.role}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Last Login</Label>
+                <p className="text-sm text-gray-600">
+                  {user?.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'N/A'}
+                </p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Email Verified</Label>
+                <Badge className="bg-green-100 text-green-800">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Verified
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function SecuritySettings() {
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const { toast } = useToast();
+
+  const form = useForm<PasswordForm>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: (data: PasswordForm) => apiRequest("/api/auth/change-password", "POST", data),
+    onSuccess: () => {
+      toast({ title: "Success", description: "Password changed successfully" });
+      form.reset();
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to change password", variant: "destructive" });
+    }
+  });
+
+  const handleChangePassword = (data: PasswordForm) => {
+    changePasswordMutation.mutate(data);
+  };
+
+  const securityEvents = [
+    {
+      id: 1,
+      event: "Password changed",
+      timestamp: "2025-01-02T10:30:00Z",
+      ipAddress: "192.168.1.100",
+      location: "New York, USA",
+      status: "success"
+    },
+    {
+      id: 2,
+      event: "Login attempt",
+      timestamp: "2025-01-02T09:15:00Z",
+      ipAddress: "192.168.1.100",
+      location: "New York, USA",
+      status: "success"
+    },
+    {
+      id: 3,
+      event: "Failed login attempt",
+      timestamp: "2025-01-01T22:45:00Z",
+      ipAddress: "203.0.113.0",
+      location: "Unknown",
+      status: "failed"
+    }
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Change Password */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Change Password</CardTitle>
+          <CardDescription>Update your account password</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={form.handleSubmit(handleChangePassword)} className="space-y-4">
+            <div>
+              <Label htmlFor="currentPassword">Current Password</Label>
+              <div className="relative">
+                <Input
+                  id="currentPassword"
+                  type={showCurrentPassword ? "text" : "password"}
+                  {...form.register("currentPassword")}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {form.formState.errors.currentPassword && (
+                <p className="text-sm text-red-500 mt-1">{form.formState.errors.currentPassword.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="newPassword">New Password</Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? "text" : "password"}
+                  {...form.register("newPassword")}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {form.formState.errors.newPassword && (
+                <p className="text-sm text-red-500 mt-1">{form.formState.errors.newPassword.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                {...form.register("confirmPassword")}
+              />
+              {form.formState.errors.confirmPassword && (
+                <p className="text-sm text-red-500 mt-1">{form.formState.errors.confirmPassword.message}</p>
+              )}
+            </div>
+
+            <Button type="submit" disabled={changePasswordMutation.isPending}>
+              <Lock className="w-4 h-4 mr-2" />
+              {changePasswordMutation.isPending ? "Changing..." : "Change Password"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Security Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Security Activity</CardTitle>
+          <CardDescription>Monitor recent logins and security events</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Event</TableHead>
+                <TableHead>Date & Time</TableHead>
+                <TableHead>IP Address</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {securityEvents.map((event) => (
+                <TableRow key={event.id}>
+                  <TableCell className="font-medium">{event.event}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      {new Date(event.timestamp).toLocaleString()}
                     </div>
-                  </>
-                )}
-              </form>
-            </CardContent>
-          </Card>
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">{event.ipAddress}</TableCell>
+                  <TableCell>{event.location}</TableCell>
+                  <TableCell>
+                    <Badge className={event.status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                      {event.status === 'success' ? (
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                      ) : (
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                      )}
+                      {event.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ActivityLog() {
+  const activityLog = [
+    {
+      id: 1,
+      action: "Viewed dashboard",
+      details: "Accessed main dashboard",
+      timestamp: "2025-01-02T14:30:00Z",
+      ipAddress: "192.168.1.100"
+    },
+    {
+      id: 2,
+      action: "Updated profile",
+      details: "Changed profile information",
+      timestamp: "2025-01-02T13:15:00Z",
+      ipAddress: "192.168.1.100"
+    },
+    {
+      id: 3,
+      action: "Created pipeline",
+      details: "Created new data pipeline 'Customer Analytics'",
+      timestamp: "2025-01-02T10:45:00Z",
+      ipAddress: "192.168.1.100"
+    },
+    {
+      id: 4,
+      action: "Logged in",
+      details: "Successful login to account",
+      timestamp: "2025-01-02T09:30:00Z",
+      ipAddress: "192.168.1.100"
+    }
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Activity Log</CardTitle>
+        <CardDescription>Your recent account activity</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {activityLog.map((activity) => (
+            <div key={activity.id} className="flex items-start gap-3 p-3 border rounded-lg">
+              <Activity className="w-5 h-5 text-blue-500 mt-0.5" />
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium">{activity.action}</p>
+                  <p className="text-sm text-gray-500">
+                    {new Date(activity.timestamp).toLocaleString()}
+                  </p>
+                </div>
+                <p className="text-sm text-gray-600">{activity.details}</p>
+                <p className="text-xs text-gray-500 mt-1">IP: {activity.ipAddress}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function Profile() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
+          <p className="text-gray-600">Manage your account settings and preferences</p>
         </div>
 
-        {/* Additional Information */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Security</CardTitle>
-              <CardDescription>Manage your account security settings</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Password</p>
-                  <p className="text-sm text-gray-600">Last changed 30 days ago</p>
-                </div>
-                <Button variant="outline" size="sm">
-                  Change Password
-                </Button>
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Two-Factor Authentication</p>
-                  <p className="text-sm text-gray-600">Add an extra layer of security</p>
-                </div>
-                <Button variant="outline" size="sm">
-                  Enable 2FA
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="profile" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Profile
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              Security
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="flex items-center gap-2">
+              <Activity className="w-4 h-4" />
+              Activity
+            </TabsTrigger>
+          </TabsList>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Your recent account activity</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="text-sm font-medium">Login from Chrome</p>
-                    <p className="text-xs text-gray-600">Today at 2:30 PM</p>
-                  </div>
-                  <Badge variant="outline">Success</Badge>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="text-sm font-medium">Profile updated</p>
-                    <p className="text-xs text-gray-600">2 days ago</p>
-                  </div>
-                  <Badge variant="outline">Action</Badge>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="text-sm font-medium">Password changed</p>
-                    <p className="text-xs text-gray-600">1 week ago</p>
-                  </div>
-                  <Badge variant="outline">Security</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="profile">
+            <ProfileInformation />
+          </TabsContent>
+
+          <TabsContent value="security">
+            <SecuritySettings />
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <ActivityLog />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

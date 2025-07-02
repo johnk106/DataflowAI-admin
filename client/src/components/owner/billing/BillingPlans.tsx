@@ -1,11 +1,18 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, FileText, DollarSign, CreditCard, TrendingUp, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Tenant, Invoice, Plan } from "@shared/schema";
+import NewPlanPage from "./NewPlanPage";
 
 export default function BillingPlans() {
+  const [showNewPlan, setShowNewPlan] = useState(false);
+
+  if (showNewPlan) {
+    return <NewPlanPage onBack={() => setShowNewPlan(false)} />;
+  }
   const { data: tenants } = useQuery<Tenant[]>({
     queryKey: ["/api/tenants"],
   });
@@ -207,7 +214,7 @@ export default function BillingPlans() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Configure Plans</CardTitle>
-          <Button>
+          <Button onClick={() => setShowNewPlan(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Add New Plan
           </Button>

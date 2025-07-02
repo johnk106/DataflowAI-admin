@@ -16,10 +16,10 @@ This is a full-featured React application built to serve as an Owner Console for
 
 ### Backend Architecture
 - **Server**: Express.js with TypeScript
-- **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: Replit OIDC integration with session management
-- **Session Storage**: PostgreSQL-backed sessions using connect-pg-simple
-- **API Design**: RESTful API with role-based access control
+- **Database**: SQLite with Drizzle ORM (migrated from PostgreSQL for offline use)
+- **Authentication**: Simple local authentication (migrated from Replit OIDC for offline use)
+- **Session Storage**: In-memory session handling
+- **API Design**: RESTful API with simple role-based access control
 
 ### Build System
 - **Bundler**: Vite for development and production builds

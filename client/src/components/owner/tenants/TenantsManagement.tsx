@@ -1,119 +1,62 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Search } from "lucide-react";
 import TenantsTable from "./TenantsTable";
-import TenantDetailModal from "./TenantDetailModal";
-import type { Tenant } from "@shared/schema";
 
 export default function TenantsManagement() {
-  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [planFilter, setPlanFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-
-  const { data: tenants, isLoading } = useQuery<Tenant[]>({
+  
+  const { data: tenants, isLoading } = useQuery({
     queryKey: ["/api/tenants"],
   });
 
-  const filteredTenants = tenants?.filter(tenant => {
-    const matchesSearch = tenant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         tenant.tenantId.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPlan = planFilter === "all" || tenant.plan === planFilter;
-    const matchesStatus = statusFilter === "all" || tenant.status === statusFilter;
-    
-    return matchesSearch && matchesPlan && matchesStatus;
-  }) || [];
-
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-64"></div>
-          <div className="bg-gray-200 h-32 rounded-lg"></div>
-          <div className="bg-gray-200 h-96 rounded-lg"></div>
-        </div>
-      </div>
-    );
-  }
+  const filteredTenants = tenants?.filter((tenant: any) =>
+    tenant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    tenant.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    tenant.tenantId.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 sm:mb-0">Tenants Management</h2>
-          <Button className="inline-flex items-center">
-            <Plus className="w-4 h-4 mr-2" />
-            Add New Tenant
-          </Button>
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Tenants Management</h1>
+          <p className="text-gray-600">Manage customer organizations and their subscriptions</p>
         </div>
+        <Button>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Tenant
+        </Button>
       </div>
 
-      {/* Search and Filters */}
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Label className="text-sm font-medium text-gray-700 mb-2">Search Tenants</Label>
-              <Input
-                type="text"
-                placeholder="Search by name or ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-gray-700 mb-2">Plan Tier</Label>
-              <Select value={planFilter} onValueChange={setPlanFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Plans</SelectItem>
-                  <SelectItem value="starter">Starter</SelectItem>
-                  <SelectItem value="professional">Professional</SelectItem>
-                  <SelectItem value="enterprise">Enterprise</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-gray-700 mb-2">Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                  <SelectItem value="trial">Trial</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end">
-              <Button variant="outline" className="w-full">
-                Filter
-              </Button>
+      <Card>
+        <CardHeader>
+          <CardTitle>Search and Filter</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search tenants by name, email, or ID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <TenantsTable
-        tenants={filteredTenants}
-        onTenantSelect={setSelectedTenant}
+      <TenantsTable 
+        tenants={filteredTenants || []} 
+        isLoading={isLoading} 
       />
-
-      {selectedTenant && (
-        <TenantDetailModal
-          tenant={selectedTenant}
-          onClose={() => setSelectedTenant(null)}
-        />
-      )}
     </div>
   );
 }

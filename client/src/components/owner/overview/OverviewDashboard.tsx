@@ -1,28 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
-import MetricsCards from "./MetricsCards";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Charts from "./Charts";
 import AlertsWidget from "./AlertsWidget";
-import type { DashboardMetrics } from "@shared/schema";
+import { Activity, Users, GitBranch, AlertTriangle } from "lucide-react";
 
 export default function OverviewDashboard() {
-  const { data: metrics, isLoading } = useQuery<DashboardMetrics>({
+  const { data: metrics, isLoading } = useQuery({
     queryKey: ["/api/dashboard/metrics"],
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   if (isLoading) {
     return (
       <div className="p-6">
-        <div className="animate-pulse space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="bg-gray-200 h-32 rounded-lg"></div>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-gray-200 h-64 rounded-lg"></div>
-            <div className="bg-gray-200 h-64 rounded-lg"></div>
-          </div>
-          <div className="bg-gray-200 h-64 rounded-lg"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -31,7 +30,7 @@ export default function OverviewDashboard() {
   if (!metrics) {
     return (
       <div className="p-6">
-        <div className="text-center py-12">
+        <div className="text-center">
           <p className="text-gray-500">Failed to load dashboard metrics</p>
         </div>
       </div>
@@ -39,29 +38,57 @@ export default function OverviewDashboard() {
   }
 
   return (
-    <div className="p-6">
-      <MetricsCards metrics={metrics} />
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div className="p-6 space-y-6">
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Tenants</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics.totalTenants}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Pipelines</CardTitle>
+            <GitBranch className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics.totalPipelines}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Pipelines</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics.activePipelines}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Failed Runs</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics.failedRuns}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts and Alerts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Charts metrics={metrics} />
         </div>
-        <AlertsWidget alerts={metrics.alerts} />
-      </div>
-      
-      {/* New Tenant Signups Chart */}
-      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">New Tenant Sign-ups by Month</h3>
-        <div className="h-64 flex items-end justify-between space-x-4">
-          {metrics.tenantSignupsData.map((item, index) => (
-            <div key={item.month} className="flex flex-col items-center">
-              <div 
-                className="w-12 bg-green-500 rounded-t mb-2" 
-                style={{ height: `${(item.signups / 30) * 200}px` }}
-              ></div>
-              <span className="text-xs text-gray-600">{item.month}</span>
-            </div>
-          ))}
+        <div>
+          <AlertsWidget alerts={metrics.alerts} />
         </div>
       </div>
     </div>

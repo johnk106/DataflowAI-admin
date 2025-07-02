@@ -10,7 +10,7 @@ export default function Home() {
     if (isAuthenticated && user) {
       // Check if user has owner or admin role to access owner console
       if (user.role === 'owner' || user.role === 'admin') {
-        window.location.href = "/owner";
+        window.location.href = "/owner/";
       } else {
         toast({
           title: "Access Denied",

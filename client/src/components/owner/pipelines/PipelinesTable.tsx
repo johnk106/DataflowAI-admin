@@ -106,11 +106,12 @@ export default function PipelinesTable({ pipelines, tenants, onPipelineSelect }:
     }
   };
 
-  const formatNextRun = (nextRun: Date | null) => {
+  const formatNextRun = (nextRun: Date | string | null) => {
     if (!nextRun) return "Manual trigger";
     
     const now = new Date();
-    const diff = nextRun.getTime() - now.getTime();
+    const nextRunDate = typeof nextRun === 'string' ? new Date(nextRun) : nextRun;
+    const diff = nextRunDate.getTime() - now.getTime();
     
     if (diff < 0) return "Overdue";
     

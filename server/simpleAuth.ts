@@ -1,11 +1,15 @@
 import type { Express, RequestHandler } from "express";
+import session from "express-session";
+import MemoryStore from "memorystore";
 import { storage } from "./storage";
+
+const MemoryStoreSession = MemoryStore(session);
 
 // Simple authentication middleware
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   if (req.session?.user) {
     // User is authenticated via session
-    (req as any).user = req.session.user;
+    req.user = req.session.user;
     next();
   } else {
     // Not authenticated
@@ -15,6 +19,20 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
 // Authentication setup
 export function setupAuth(app: Express) {
+  // Setup session middleware
+  app.use(session({
+    store: new MemoryStoreSession({
+      checkPeriod: 86400000, // prune expired entries every 24h
+    }),
+    secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // Set to true in production with HTTPS
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  }));
   // Login endpoint
   app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;

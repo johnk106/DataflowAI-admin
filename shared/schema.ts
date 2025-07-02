@@ -1,116 +1,100 @@
 import {
-  pgTable,
+  sqliteTable,
   text,
-  varchar,
-  timestamp,
-  jsonb,
-  index,
-  serial,
   integer,
-  boolean,
-  decimal,
-} from "drizzle-orm/pg-core";
+  real,
+  index,
+} from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Session storage table (required for Replit Auth)
-export const sessions = pgTable(
-  "sessions",
-  {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
-  },
-  (table) => [index("IDX_session_expire").on(table.expire)],
-);
-
-// User storage table (required for Replit Auth)
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().notNull(),
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role").notNull().default("support"), // owner, admin, support
-  status: varchar("status").notNull().default("active"), // active, disabled
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+// User storage table
+export const users = sqliteTable("users", {
+  id: text("id").primaryKey().notNull(),
+  email: text("email"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  profileImageUrl: text("profile_image_url"),
+  role: text("role").notNull().default("support"), // owner, admin, support
+  status: text("status").notNull().default("active"), // active, disabled
+  createdAt: integer("created_at", { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
 // Tenants table
-export const tenants = pgTable("tenants", {
-  id: serial("id").primaryKey(),
-  name: varchar("name").notNull(),
-  tenantId: varchar("tenant_id").notNull().unique(),
-  email: varchar("email").notNull(),
-  plan: varchar("plan").notNull(), // starter, professional, enterprise
-  status: varchar("status").notNull().default("active"), // active, suspended, trial
-  signupDate: timestamp("signup_date").defaultNow(),
-  nextBillingDate: timestamp("next_billing_date"),
-  monthlyUsage: decimal("monthly_usage", { precision: 10, scale: 2 }).default("0"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+export const tenants = sqliteTable("tenants", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  tenantId: text("tenant_id").notNull().unique(),
+  email: text("email").notNull(),
+  plan: text("plan").notNull(), // starter, professional, enterprise
+  status: text("status").notNull().default("active"), // active, suspended, trial
+  signupDate: integer("signup_date", { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  nextBillingDate: integer("next_billing_date", { mode: 'timestamp' }),
+  monthlyUsage: real("monthly_usage").default(0),
+  createdAt: integer("created_at", { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
 // Pipelines table
-export const pipelines = pgTable("pipelines", {
-  id: serial("id").primaryKey(),
-  pipelineId: varchar("pipeline_id").notNull().unique(),
-  name: varchar("name").notNull(),
+export const pipelines = sqliteTable("pipelines", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  pipelineId: text("pipeline_id").notNull().unique(),
+  name: text("name").notNull(),
   tenantId: integer("tenant_id").references(() => tenants.id),
-  owner: varchar("owner").notNull(),
-  status: varchar("status").notNull(), // running, paused, failed, completed
-  lastRunStatus: varchar("last_run_status"), // success, failed, pending
-  nextScheduledRun: timestamp("next_scheduled_run"),
-  definition: jsonb("definition"),
+  owner: text("owner").notNull(),
+  status: text("status").notNull(), // running, paused, failed, completed
+  lastRunStatus: text("last_run_status"), // success, failed, pending
+  nextScheduledRun: integer("next_scheduled_run", { mode: 'timestamp' }),
+  definition: text("definition"), // JSON string
   version: integer("version").default(1),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
 // System metrics table
-export const systemMetrics = pgTable("system_metrics", {
-  id: serial("id").primaryKey(),
-  service: varchar("service").notNull(), // orchestrator, nifi, beam, airflow
-  cpuUsage: decimal("cpu_usage", { precision: 5, scale: 2 }),
-  memoryUsage: decimal("memory_usage", { precision: 5, scale: 2 }),
-  errorRate: decimal("error_rate", { precision: 5, scale: 2 }),
-  status: varchar("status").notNull(), // healthy, warning, critical
-  timestamp: timestamp("timestamp").defaultNow(),
+export const systemMetrics = sqliteTable("system_metrics", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  service: text("service").notNull(), // orchestrator, nifi, beam, airflow
+  cpuUsage: real("cpu_usage"),
+  memoryUsage: real("memory_usage"),
+  errorRate: real("error_rate"),
+  status: text("status").notNull(), // healthy, warning, critical
+  timestamp: integer("timestamp", { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
 // Audit logs table
-export const auditLogs = pgTable("audit_logs", {
-  id: serial("id").primaryKey(),
-  actor: varchar("actor").notNull(),
-  action: varchar("action").notNull(),
+export const auditLogs = sqliteTable("audit_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  actor: text("actor").notNull(),
+  action: text("action").notNull(),
   details: text("details"),
-  ipAddress: varchar("ip_address"),
-  timestamp: timestamp("timestamp").defaultNow(),
+  ipAddress: text("ip_address"),
+  timestamp: integer("timestamp", { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
 // Invoices table
-export const invoices = pgTable("invoices", {
-  id: serial("id").primaryKey(),
-  invoiceId: varchar("invoice_id").notNull().unique(),
+export const invoices = sqliteTable("invoices", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  invoiceId: text("invoice_id").notNull().unique(),
   tenantId: integer("tenant_id").references(() => tenants.id),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  status: varchar("status").notNull(), // paid, pending, overdue
-  dueDate: timestamp("due_date").notNull(),
-  paidDate: timestamp("paid_date"),
-  createdAt: timestamp("created_at").defaultNow(),
+  amount: real("amount").notNull(),
+  status: text("status").notNull(), // paid, pending, overdue
+  dueDate: integer("due_date", { mode: 'timestamp' }).notNull(),
+  paidDate: integer("paid_date", { mode: 'timestamp' }),
+  createdAt: integer("created_at", { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
 // Plans table
-export const plans = pgTable("plans", {
-  id: serial("id").primaryKey(),
-  name: varchar("name").notNull().unique(),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+export const plans = sqliteTable("plans", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(),
+  price: real("price").notNull(),
   pipelineLimit: integer("pipeline_limit"),
-  storageLimit: varchar("storage_limit"),
-  features: jsonb("features"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
+  storageLimit: text("storage_limit"),
+  features: text("features"), // JSON string
+  isActive: integer("is_active", { mode: 'boolean' }).default(true),
+  createdAt: integer("created_at", { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
 // Insert schemas
